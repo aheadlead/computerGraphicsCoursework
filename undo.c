@@ -32,7 +32,7 @@ struct undo_list_item {
 };
 static struct undo_list_item * undo_list_head_p;
 
-void bg_undo_snapshot() {
+void bg_undo_commit() {
     /* allocate spaces */
     struct undo_list_item * new=(struct undo_list_item *)malloc(sizeof(struct undo_list_item));
 
@@ -46,20 +46,24 @@ void bg_undo_snapshot() {
     return;
 }
 
-void undo() {
+void bg_undo_restore() {
     if (NULL == undo_list_head_p) {
         return;
     }
 
     /* restore */
     memcpy(&current, &undo_list_head_p->frame, sizeof(current));
-    
+
+    return;
+}
+
+void bg_undo_pop() {
     /* pointer change */
     struct undo_list_item * tmp=undo_list_head_p;
     undo_list_head_p = undo_list_head_p->next_p;
 
     /* free */
     free(tmp);
-
+    
     return;
 }

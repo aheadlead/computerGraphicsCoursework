@@ -7,6 +7,7 @@
 #define BG_DRAW
 
 #include "point.h"
+#include "point_list.h"
 
 void bg_draw_line(
         struct bg_point * from_p, 
@@ -25,6 +26,8 @@ void bg_draw_circle(
 
 void bg_draw_fill(
         struct bg_point * position_p);
+
+void bg_draw_flush();
 
 
 #endif  /* BG_DRAW */

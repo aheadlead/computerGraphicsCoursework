@@ -1,8 +1,6 @@
 /* Base graphics library for coursework 
  *
  * Point
- * 
- * Header file only.
  */
 
 #ifndef BG_POINT
@@ -11,17 +9,12 @@
 #include <stdlib.h>
 
 struct bg_point {
-    unsigned int x, y;
+    int x, y;
 };
 
 struct bg_point *
 bg_point_make(
-        unsigned int x, 
-        unsigned int y) {
-    struct bg_point * ret=(struct bg_point *)malloc(sizeof(struct bg_point));
-    ret->x = x;
-    ret->y = y;
-    return ret;
-}
+        int x, 
+        int y);
 
 #endif  /* BG_POINT */

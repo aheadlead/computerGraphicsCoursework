@@ -6,6 +6,10 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include <glut/GLUT.h>
+
+#include "point.h"
+
 void bg_menu_callback(int value);
 void bg_menu_bind(
         char * title,
@@ -16,13 +20,13 @@ void bg_mouse_plot_callback(
         GLint action,
         GLint xMouse,
         GLint yMouse);
-void bg_mouse_press_bind(void (*callback)());
-void bg_mouse_release_bind(void (*callback)());
+void bg_mouse_press_bind(void (*callback)(struct bg_point *));
+void bg_mouse_release_bind(void (*callback)(struct bg_point *));
 
 void bg_mouse_move_callback(
         GLint xMouse,
         GLint yMouse);
-void bg_mouse_drag_bind(void (*callback)());
+void bg_mouse_drag_bind(void (*callback)(struct bg_point *));
 
 void bg_keyboard_callback(
         unsigned char key,

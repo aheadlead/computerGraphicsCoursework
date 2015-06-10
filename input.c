@@ -12,8 +12,9 @@
  * to use it still because I don't have plenty of time to improve my coursework and 
  * use new version APIs.
  */
-/* TODO test for without this pragma */ 
-/*#pragma GCC diagnostic ignored "-Wdeprecated-declarations"*/
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+#include "point.h"
 
 static int
 last_menu_value=0;
@@ -55,9 +56,9 @@ menu_item_list_callback_by_value(
 }
 
 /* mouse events bindings */
-void (*press_callback)(),
-     (*release_callback)(),
-     (*move_callback)(int, int);
+void (*press_callback)(struct bg_point *),
+     (*release_callback)(struct bg_point *),
+     (*move_callback)(struct bg_point *);
 
 /* keyboard events bindings */
 void (*kb_callback[256])()={NULL};
@@ -85,12 +86,18 @@ void bg_mouse_plot_callback(
     if (button == GLUT_LEFT_BUTTON) {
         if (action == GLUT_DOWN) {
             if (NULL != press_callback) {
-                press_callback();
+                struct bg_point * tmp_point=
+                    bg_point_make((unsigned int)xMouse, 400-(unsigned int)yMouse);
+                press_callback(tmp_point);
+                free(tmp_point);
             }
         }
-        else if (action = GLUT_UP) {
+        else if (action == GLUT_UP) {
             if (NULL != release_callback) {
-                release_callback();
+                struct bg_point * tmp_point=
+                    bg_point_make((unsigned int)xMouse, 400-(unsigned int)yMouse);
+                release_callback(tmp_point);
+                free(tmp_point);
             }
         }
     }
@@ -101,21 +108,24 @@ void bg_mouse_move_callback(
         GLint xMouse,
         GLint yMouse) {
     if (NULL != move_callback) {
-        move_callback(xMouse, yMouse);
+        struct bg_point * tmp_point=
+            bg_point_make((unsigned int)xMouse, 400-(unsigned int)yMouse);
+        move_callback(tmp_point);
+        free(tmp_point);
     }
 }
 
-void bg_mouse_press_bind(void (*callback)()) {
+void bg_mouse_press_bind(void (*callback)(struct bg_point *)) {
     press_callback = callback;
     return;
 }
 
-void bg_mouse_release_bind(void (*callback)()) {
+void bg_mouse_release_bind(void (*callback)(struct bg_point *)) {
     release_callback = callback;
     return;
 }
 
-void bg_mouse_drag_bind(void (*callback)()) {
+void bg_mouse_drag_bind(void (*callback)(struct bg_point *)) {
     move_callback = callback;
     return;
 }

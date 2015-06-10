@@ -6,6 +6,7 @@
 
 #include "point.h"
 #include "input.h"
+#include "frame_cache.h"
 
 /* Though the OpenGL APIs used in this program is abandoned and outdated, I have 
  * to use it still because I don't have plenty of time to improve my coursework and 
@@ -13,18 +14,24 @@
  */
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+extern bg_frame
+current;
 
 /* private functions */
 static void 
 __flush() {
+    printf("__flush()\n");
     glClear(GL_COLOR_BUFFER_BIT);
 
     struct bg_point p;
-
+    
+    glColor3f(0.0f, 0.0f, 0.0f);
     glBegin(GL_POINTS);
     for (p.x=0; p.x<400; ++p.x) {
         for (p.y=0; p.y<400; ++p.y) {
-            glVertex2i(p.x, p.y);
+            if (0 != current[p.x][p.y]) {
+                glVertex2i(p.x, p.y);
+            }
         }
     }
     glEnd();
@@ -49,13 +56,11 @@ bg_init() {
     glutInit(&fake_argc, fake_argv);
     
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    glutWindowSize(400, 400);
+    glutInitWindowSize(400, 400);
     glutCreateWindow("Computer graphics coursework");
 
     /* TODO may could be removed */
     glutDisplayFunc(__flush);
-
-    glutIdleFunc(__flush);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glMatrixMode(GL_PROJECTION);
@@ -71,6 +76,13 @@ bg_init() {
 
     /* initialize keyboard */
     glutKeyboardFunc(bg_keyboard_callback);
+
+    /* initialize undo stack 
+     *
+     * Committing a complete white screen when initializing in case of wrong
+     * display at the first operation. If not, overlapping pattern appears.
+     */
+    bg_undo_commit();
     
     return;
 }
