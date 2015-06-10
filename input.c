@@ -3,6 +3,7 @@
  * Input
  */
 
+#include <stdio.h>  /* fprintf stderr */
 #include <stdlib.h>  /* malloc */
 #include <stddef.h>  /* NULL */
 
@@ -24,9 +25,9 @@ struct menu_item {
     void (*callback)();
     struct menu_item * next;
 };
-static struct menu_item * menu_item_list_head;
+static struct menu_item * menu_item_list_head=NULL;
 
-/* add menu item to menu item list for search when click menu */
+/* add menu item to menu item list for searching when click menu */
 static void 
 menu_item_list_push(
         int value, 
@@ -41,15 +42,16 @@ menu_item_list_push(
 
 /* Call the callback by value */
 static void
-menu_item_list_callback_by_value(
-        int value) {
+menu_item_list_callback_by_value(int value) {
     struct menu_item * p=menu_item_list_head;
     while (NULL != p) {
+        fprintf(stderr, "p.callback=%p next=%p\n", p->callback, p->next);
         if (p->value != value) {
-            p += 1;
+            p = p->next;
         }
         else {
-            p->callback();
+            (p->callback)();
+            break;
         }
     }
     return;

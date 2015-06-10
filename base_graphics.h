@@ -30,6 +30,7 @@
 /* functions */
 void bg_init();
 void bg_mainloop();
+void bg_clean();
 
 /*
 void bg_selection_move(

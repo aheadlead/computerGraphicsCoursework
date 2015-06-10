@@ -176,7 +176,14 @@ void bg_draw_curve(
 void bg_draw_rectangle(
         struct bg_point * LU_p, 
         struct bg_point * RD_p) {
+    struct bg_point LD={.x=LU_p->x, .y=RD_p->y};
+    struct bg_point RU={.x=RD_p->x, .y=LU_p->y};
+    bg_draw_line(LU_p, &RU);
+    bg_draw_line(&RU, RD_p);
+    bg_draw_line(RD_p, &LD);
+    bg_draw_line(&LD, LU_p);
 
+    return;
 }
 
 void bg_draw_circle(
@@ -185,9 +192,40 @@ void bg_draw_circle(
 
 }
 
+/* ugly implementation */
+int head, tail;
+struct bg_point * queue[160000];
 void bg_draw_fill(
         struct bg_point * position_p) {
-	
+    head = 0; 
+    queue[0] = bg_point_make(
+            position_p->x,
+            position_p->y);
+    current[position_p->x][position_p->y] = 1;
+    tail = 1;
+    
+    while (head != tail) {
+        struct bg_point f=*queue[head];
+        if (f.x+1 < 400 && current[f.x+1][f.y] == 0) {
+            current[f.x+1][f.y] = 1;
+            queue[tail++] = bg_point_make(f.x+1, f.y);
+        }
+        if (f.x-1 >= 0 && current[f.x-1][f.y] == 0) {
+            current[f.x-1][f.y] = 1;
+            queue[tail++] = bg_point_make(f.x-1, f.y);
+        }
+        if (f.y+1 < 400 && current[f.x][f.y+1] == 0) {
+            current[f.x][f.y+1] = 1;
+            queue[tail++] = bg_point_make(f.x, f.y+1);
+        }
+        if (f.y-1 >= 0 && current[f.x][f.y-1] == 0) {
+            current[f.x][f.y-1] = 1;
+            queue[tail++] = bg_point_make(f.x, f.y-1);
+        }
+        free(queue[head]);
+        head++;
+    }
+    return;
 }
 
 void bg_draw_flush() {

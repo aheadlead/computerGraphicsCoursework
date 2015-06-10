@@ -7,6 +7,7 @@
 #include "point.h"
 #include "input.h"
 #include "frame_cache.h"
+#include "undo.h"
 
 /* Though the OpenGL APIs used in this program is abandoned and outdated, I have 
  * to use it still because I don't have plenty of time to improve my coursework and 
@@ -84,6 +85,12 @@ bg_init() {
      */
     bg_undo_commit();
     
+    return;
+}
+
+void bg_clean() {
+    memset(current, 0, sizeof(current));
+    bg_undo_commit();
     return;
 }
 
