@@ -7,29 +7,35 @@
 #define POINT_QUEUE
 
 #include "point.h"
+#include "linux/list.h"
 
-struct bg_point_queue_element {
+struct bg_point_queue_node {
     struct bg_point * point;
-    struct bg_point_queue_element * next;
+    struct list_head list;
 };
 
-struct bg_point_queue {
-    struct bg_point_element * head;
-    struct bg_point_element * tail;
-};
+typedef struct list_head bg_point_queue;
 
 int 
 bg_point_queue_empty(
-        const struct bg_point_queue * q) {
-    return q->head == NULL;
+        const bg_point_queue * head) {
+    return list_empty(head);
 }
 
 void
-bg_point_queue_push(
-        struct bg_point_queue * q,
+bg_point_queue_pushback(
+        const bg_point_queue * head,
         const struct bg_point * p) {
-    if ( 
+    list_add_tail(&(p->list), head);
+    return;
 }
+
+struct bg_point * 
+bg_point_queue_popfront(
+        const bg_point_queue * head) {
+    struct bg_point_queue_node ret;
+    list_first_entry(ret, 
+        
 
 #endif  /* POINT_QUEUE */
 

@@ -1,13 +1,13 @@
 OBJ = base_graphics.o draw.o input.o undo.o main.o point.c point_list.c
 CC = gcc
-CFLAGS = -framework OpenGL \
-		 -framework GLUT \
-		 -framework Foundation \
-		 -O0 -g
+CFLAGS = -O0 -g
+LIBS = -framework OpenGL \
+	   -framework GLUT \
+	   -framework Foundation 
 TARGET = main
 
 main: $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $(TARGET)
+	$(CC) $(LIBS) $(CFLAGS) $(OBJ) -o $(TARGET)
 
 clean: 
 	-rm *.o

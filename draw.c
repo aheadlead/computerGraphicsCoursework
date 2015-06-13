@@ -7,6 +7,7 @@
 #include <assert.h>  /* assert */
 
 #include <glut/GLUT.h>
+#include "linux/list.h"
 
 /* Though the OpenGL APIs used in this program is abandoned and outdated, I have 
  * to use it still because I don't have plenty of time to improve my coursework and 
@@ -22,12 +23,14 @@ current;
 
 /* algorithm */
 
-struct bg_point_list algo_line_bresenham(
+struct bg_point_list * 
+algo_line_bresenham(
         int x0, int y0, 
         int x1, int y1) {
-    struct bg_point_list ret={
-        .head_p=NULL,
-        .length=0};
+    struct bg_point_list * ret=(struct bg_point_list *)malloc(
+            sizeof(struct bg_point_list));
+    ret->head_p=NULL,
+    ret->length=0;
     /* Bresenham algorithm */
     int x, y, dx, dy, e;
     dx = x1-x0;
@@ -37,7 +40,7 @@ struct bg_point_list algo_line_bresenham(
     y = y0;
     while (x <= x1) {
         struct bg_point * tmp_point=bg_point_make(x, y);
-        bg_point_list_append(&ret, tmp_point);
+        bg_point_list_append(ret, tmp_point);
         free(tmp_point);
 
         x += 1;
@@ -50,7 +53,7 @@ struct bg_point_list algo_line_bresenham(
     return ret;
 }
 
-struct bg_point_list algo_line(int x0, int y0, int x1, int y1)
+struct bg_point_list * algo_line(int x0, int y0, int x1, int y1)
 {
     const int dx=x1-x0,
               dy=y1-y0;
@@ -106,7 +109,7 @@ struct bg_point_list algo_line(int x0, int y0, int x1, int y1)
         {1, 0, 0, -1}
     };
     
-    struct bg_point_list ret;
+    struct bg_point_list * ret;
     const int pn=part_number;  /* alias */
     /* mapping */
     int mapped_x1=dx*t[pn][0] + dy*t[pn][2], 
@@ -121,8 +124,8 @@ struct bg_point_list algo_line(int x0, int y0, int x1, int y1)
 
     /* TODO debugging: output ret */
     fprintf(stderr, "###drawing point sequence start\n");
-    for (struct bg_point * p=ret.head_p;
-            p < ret.head_p+ret.length;
+    for (struct bg_point * p=ret->head_p;
+            p < ret->head_p+ret->length;
             ++p) {
         fprintf(stderr, "x=%d\ty=%d\n", p->x, p->y);
     }
@@ -131,8 +134,8 @@ struct bg_point_list algo_line(int x0, int y0, int x1, int y1)
 
     /* unmapping */
     int u[8]={0, 1, 6, 3, 4, 5, 2, 7};
-    for (struct bg_point * p=ret.head_p;
-            p < ret.head_p+ret.length;
+    for (struct bg_point * p=ret->head_p;
+            p < ret->head_p+ret->length;
             ++p) {
         struct bg_point tmp;
         tmp.x = p->x*t[u[pn]][0] + p->y*t[u[pn]][2] + x0;
@@ -148,22 +151,23 @@ struct bg_point_list algo_line(int x0, int y0, int x1, int y1)
 void bg_draw_line(
         struct bg_point * from_p, 
         struct bg_point * to_p) {
-    struct bg_point_list point_list=
+
+    struct bg_point_list * point_list_p=
         algo_line(
                 from_p->x, from_p->y,
                 to_p->x, to_p->y);
 
-    for (struct bg_point * p=point_list.head_p;
-            p < point_list.head_p+point_list.length;
+    for (struct bg_point * p=point_list_p->head_p;
+            p < point_list_p->head_p+point_list_p->length;
             ++p) {
         if (0 <= p->x && p->x < 400 && 0 <= p->y && p->y < 400) {
             current[p->x][p->y] = 1;
         }
     }
 
-    /* free for point_list */
-    if (NULL != point_list.head_p) {
-        free(point_list.head_p);
+    /* free point_list_p */
+    if (NULL != point_list_p->head_p) {
+        free(point_list_p->head_p);
     }
 
     return;
@@ -192,44 +196,81 @@ void bg_draw_circle(
 
 }
 
-/* ugly implementation */
-int head, tail;
-struct bg_point * queue[160000];
-void bg_draw_fill(
-        struct bg_point * position_p) {
-    head = 0; 
-    queue[0] = bg_point_make(
-            position_p->x,
-            position_p->y);
-    current[position_p->x][position_p->y] = 1;
-    tail = 1;
+struct __point_list_node {
+    struct bg_point * point_p;
+    struct list_head list;
+};
+
+struct __point_list_node *
+__make_node(
+        struct bg_point * point_p) {
+    struct __point_list_node * ret;
+    ret = (struct __point_list_node *)malloc(sizeof(struct __point_list_node));
+    ret->point_p = point_p;
+    return ret;
+}
+
+void bg_draw_fill(struct bg_point * position_p) { 
+    struct list_head head;
+
+    INIT_LIST_HEAD(&head);
+
+
+    list_add_tail(
+            &__make_node(bg_point_make(
+                    position_p->x, 
+                    position_p->y)) -> list,  
+            &head);
     
-    while (head != tail) {
-        struct bg_point f=*queue[head];
-        if (f.x+1 < 400 && current[f.x+1][f.y] == 0) {
-            current[f.x+1][f.y] = 1;
-            queue[tail++] = bg_point_make(f.x+1, f.y);
+    current[position_p->x][position_p->y] = 1;
+    
+    while (!list_empty(&head)) {
+        struct __point_list_node * fn=  /* fn means the pointer of the first node */
+            list_first_entry(&head, struct __point_list_node, list);
+        struct bg_point * f=      /* f means the pointer of the first element */
+            fn->point_p;
+        if (f->x+1 < 400 && current[f->x+1][f->y] == 0) {  /* RIGHT */
+            current[f->x+1][f->y] = 1;
+            list_add_tail(
+                    &__make_node(bg_point_make(
+                            f->x+1, 
+                            f->y)) -> list, 
+                    &head);
         }
-        if (f.x-1 >= 0 && current[f.x-1][f.y] == 0) {
-            current[f.x-1][f.y] = 1;
-            queue[tail++] = bg_point_make(f.x-1, f.y);
+        if (f->x-1 >= 0 && current[f->x-1][f->y] == 0) {  /* LEFT */
+            current[f->x-1][f->y] = 1;
+            list_add_tail(
+                    &__make_node(bg_point_make(
+                            f->x-1,
+                            f->y)) -> list, 
+                    &head);
         }
-        if (f.y+1 < 400 && current[f.x][f.y+1] == 0) {
-            current[f.x][f.y+1] = 1;
-            queue[tail++] = bg_point_make(f.x, f.y+1);
+        if (f->y+1 < 400 && current[f->x][f->y+1] == 0) {  /* UP */
+            current[f->x][f->y+1] = 1;
+            list_add_tail(
+                    &__make_node(bg_point_make(
+                            f->x,
+                            f->y+1)) -> list, 
+                    &head);
         }
-        if (f.y-1 >= 0 && current[f.x][f.y-1] == 0) {
-            current[f.x][f.y-1] = 1;
-            queue[tail++] = bg_point_make(f.x, f.y-1);
+        if (f->y-1 >= 0 && current[f->x][f->y-1] == 0) {  /* DOWN */
+            current[f->x][f->y-1] = 1;
+            list_add_tail(
+                    &__make_node(bg_point_make(
+                            f->x,
+                            f->y-1)) -> list,
+                    &head);
         }
-        free(queue[head]);
-        head++;
+        free(f);
+        f = NULL;
+        list_del(head.next);  /* delete the first element in queue */
+        free(fn);
     }
     return;
 }
 
-void bg_draw_flush() {
-    glutPostRedisplay();
+void bg_draw_flush() { 
+    glutPostRedisplay(); 
     return;
 }
 

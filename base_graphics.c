@@ -1,6 +1,7 @@
 #include <stdio.h>  /* printf */
 #include <stdlib.h>  /* malloc free */
 #include <stddef.h>  /* size_t */
+#include <string.h>  /* memset */
 
 #include <GLUT/glut.h>
 
@@ -24,7 +25,7 @@ __flush() {
     printf("__flush()\n");
     glClear(GL_COLOR_BUFFER_BIT);
 
-    struct bg_point p;
+    struct bg_point p;  /* p is temporary variable */
     
     glColor3f(0.0f, 0.0f, 0.0f);
     glBegin(GL_POINTS);
@@ -73,7 +74,8 @@ bg_init() {
 
     /* initialize mouse */
     glutMouseFunc(bg_mouse_plot_callback);
-    glutMotionFunc(bg_mouse_move_callback);
+    glutPassiveMotionFunc(bg_mouse_move_callback);
+    glutMotionFunc(bg_mouse_drag_callback);
 
     /* initialize keyboard */
     glutKeyboardFunc(bg_keyboard_callback);
