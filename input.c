@@ -92,7 +92,7 @@ void bg_mouse_plot_callback(
                 struct bg_point * tmp_point=
                     bg_point_make((unsigned int)xMouse, 400-(unsigned int)yMouse);
                 press_callback(tmp_point);
-                free(tmp_point);
+                free(tmp_point); tmp_point = NULL;
             }
         }
         else if (action == GLUT_UP) {
@@ -100,7 +100,7 @@ void bg_mouse_plot_callback(
                 struct bg_point * tmp_point=
                     bg_point_make((unsigned int)xMouse, 400-(unsigned int)yMouse);
                 release_callback(tmp_point);
-                free(tmp_point);
+                free(tmp_point); tmp_point = NULL;
             }
         }
     }
@@ -114,8 +114,9 @@ void bg_mouse_move_callback(
         struct bg_point * tmp_point=
             bg_point_make((unsigned int)xMouse, 400-(unsigned int)yMouse);
         move_callback(tmp_point);
-        free(tmp_point);
+        free(tmp_point); tmp_point = NULL;
     }
+    return;
 }
 
 void bg_mouse_drag_callback(
@@ -125,8 +126,9 @@ void bg_mouse_drag_callback(
         struct bg_point * tmp_point=
             bg_point_make((unsigned int)xMouse, 400-(unsigned int)yMouse);
         drag_callback(tmp_point);
-        free(tmp_point);
+        free(tmp_point); tmp_point = NULL;
     }
+    return;
 }
 
 void bg_mouse_press_bind(void (*callback)(struct bg_point *)) {

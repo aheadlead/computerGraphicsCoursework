@@ -62,6 +62,7 @@ void __bg_undo_pop_force() {
 
     /* free */
     free(tmp);
+    tmp = NULL;
     return;
 }
 

@@ -42,6 +42,7 @@ algo_line_bresenham(
         struct bg_point * tmp_point=bg_point_make(x, y);
         bg_point_list_append(ret, tmp_point);
         free(tmp_point);
+        tmp_point = NULL;
 
         x += 1;
         e = e+2*dy;
@@ -94,7 +95,9 @@ struct bg_point_list * algo_line(int x0, int y0, int x1, int y1)
      *    fprintf(stderr, "我操你大爷 %d\n", part_number);
      *}
      */
+#ifndef NDEBUG
     assert(part_number < 8 && part_number >= 0);
+#endif  /* NDEBUG */
 #undef ABS
 
     typedef int matrix_2x2[4];
@@ -114,15 +117,15 @@ struct bg_point_list * algo_line(int x0, int y0, int x1, int y1)
     /* mapping */
     int mapped_x1=dx*t[pn][0] + dy*t[pn][2], 
         mapped_y1=dx*t[pn][1] + dy*t[pn][3];
-    /* TODO debugging */
+#ifdef DEBUG_BG_DRAW_LINE
     fprintf(stderr, "pn : %d\n", pn);
     fprintf(stderr, "mapped coodinate : %d, %d\n", mapped_x1, mapped_y1);
     fprintf(stderr, "dx, dy : %d, %d\n", dx, dy);
-    /* end of debugging */
+#endif  /* DEBUG_BG_DRAW_LINE */
     /* 求直线绘制的的每个点相对于 (x0, y0) 的增量 */
     ret = algo_line_bresenham(0, 0, mapped_x1, mapped_y1);
 
-    /* TODO debugging: output ret */
+#ifdef DEBUG_BG_DRAW_LINE
     fprintf(stderr, "###drawing point sequence start\n");
     for (struct bg_point * p=ret->head_p;
             p < ret->head_p+ret->length;
@@ -130,7 +133,7 @@ struct bg_point_list * algo_line(int x0, int y0, int x1, int y1)
         fprintf(stderr, "x=%d\ty=%d\n", p->x, p->y);
     }
     fprintf(stderr, "###drawing point sequence end\n\n");
-    /* end of debugging */
+#endif  /* DEBUG_BG_DRAW_LINE */
 
     /* unmapping */
     int u[8]={0, 1, 6, 3, 4, 5, 2, 7};
@@ -151,6 +154,20 @@ struct bg_point_list * algo_line(int x0, int y0, int x1, int y1)
 void bg_draw_line(
         struct bg_point * from_p, 
         struct bg_point * to_p) {
+#define DEBUG_BG_DRAW_LINE
+#ifdef DEBUG_BG_DRAW_LINE
+    printf("draw line from (%d, %d) to (%d, %d)\n", 
+            from_p->x, from_p->y,
+            to_p->x, to_p->y);
+#endif  /* DEBUG_BG_DRAW_LINE */
+#ifndef NDEBUG
+    /*
+     *assert(0 < from_p->x && from_p->x < 400 &&
+     *        0 < from_p->y && from_p->y < 400 &&
+     *        0 < to_p->x && to_p->x < 400 &&
+     *        0 < to_p->y && to_p->y < 400);
+     */
+#endif  /* NDEBUG */
 
     struct bg_point_list * point_list_p=
         algo_line(
@@ -168,7 +185,27 @@ void bg_draw_line(
     /* free point_list_p */
     if (NULL != point_list_p->head_p) {
         free(point_list_p->head_p);
+        point_list_p->head_p = NULL;
     }
+
+    return;
+}
+
+void bg_draw_polyline(
+        struct bg_point_list * point_list_p, 
+        struct bg_point * last_point_p) {
+    
+    struct bg_point * arr=point_list_p->head_p;
+    size_t length=point_list_p->length; 
+
+    if (NULL != last_point_p) {
+        bg_draw_line(arr+length-1, last_point_p); 
+    }
+
+    for (int i=1; i<length; ++i) {
+        bg_draw_line(arr+i-1, arr+i);
+    }
+
 
     return;
 }
@@ -261,10 +298,9 @@ void bg_draw_fill(struct bg_point * position_p) {
                             f->y-1)) -> list,
                     &head);
         }
-        free(f);
-        f = NULL;
+        free(f); f = NULL;
         list_del(head.next);  /* delete the first element in queue */
-        free(fn);
+        free(fn); fn = NULL;
     }
     return;
 }

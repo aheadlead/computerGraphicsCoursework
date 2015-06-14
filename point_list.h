@@ -28,5 +28,12 @@ bg_point_list_append(
         struct bg_point_list * point_list_p,
         struct bg_point * new_point_p);
 
+void
+bg_point_list_clear(
+        struct bg_point_list * point_list_p);
+
+void bg_point_list_removeback(
+        struct bg_point_list * point_list_p);
+
 #endif  /* BG_POINT_LIST */
 
