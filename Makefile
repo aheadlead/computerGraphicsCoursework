@@ -1,4 +1,5 @@
-OBJ = base_graphics.o draw.o input.o undo.o main.o point.c point_list.c
+VERSION = debug
+OBJ = base_graphics.o draw.o input.o undo.o main.o point.c point_list.c math_extension.o
 CC = gcc
 CFLAGS = -O0 -g
 LIBS = -framework OpenGL \
@@ -6,11 +7,18 @@ LIBS = -framework OpenGL \
 	   -framework Foundation 
 TARGET = main
 
-main: $(OBJ)
+ifeq ($(VERSION), debug)
+CFLAGS = -O0 -g
+else
+CFLAGS = -O3 -DNDEBUG
+endif
+
+$(TARGET): $(OBJ)
 	$(CC) $(LIBS) $(CFLAGS) $(OBJ) -o $(TARGET)
 
 clean: 
 	-rm *.o
+	-rm $(TARGET)
 
 run: main
 	./main
@@ -32,3 +40,7 @@ point.o: point.c
 
 point_list.o: point_list.c
 	$(CC) -c $(CFLAGS) point_list.c -o point_list.o
+
+math_extension.o: math_extension.c
+	$(CC) -c $(CFLAGS) math_extension.c -o math_extension.o
+
