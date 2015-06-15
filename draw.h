@@ -9,6 +9,27 @@
 #include "point.h"
 #include "point_list.h"
 
+/* 样式列表
+ *  |01234567890123456789012345678901|
+ *  |--------------------------------|    BG_LINE_PATTERN_0
+ *  |----------------                |    BG_LINE_PATTERN_1
+ *  |--------        --------        |    BG_LINE_PATTERN_2
+ *  |----    ----    ----    ----    |    BG_LINE_PATTERN_3
+ *  |--  --  --  --  --  --  --  --  |    BG_LINE_PATTERN_4
+ *  |- - - - - - - - - - - - - - - - |    BG_LINE_PATTERN_5
+ *  
+ *  |01234567890123456789012345678901|
+ *  |--  --------------------------  |    BG_LINE_PATTERN_6
+ *  |----------------------------    |    BG_LINE_PATTERN_7
+ */
+#define BG_LINE_PATTERN_0   0xFFFFFFFF
+#define BG_LINE_PATTERN_1   0xFFFF0000
+#define BG_LINE_PATTERN_2   0xFF00FF00
+#define BG_LINE_PATTERN_3   0xF0F0F0F0
+#define BG_LINE_PATTERN_4   0xCCCCCCCC
+#define BG_LINE_PATTERN_5   0xAAAAAAAA
+#define BG_LINE_PATTERN_6   0xCFFFFFFC
+#define BG_LINE_PATTERN_7   0xFFFFFFF0
 void bg_draw_line_set_pattern(int pattern);
 void bg_draw_line(
         struct bg_point * from_p, 
