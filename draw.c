@@ -26,6 +26,17 @@ current;
 
 /* public */
 
+/* ROTATE_R(x) 循环右移
+ * x 是一个整型变量。
+ */
+#define ROTATE_R(x) \
+    (x) = ((x&0x1) << (8*sizeof(x)-1))|((unsigned)x>>1);
+static int line_pattern=1;
+void bg_draw_line_set_pattern(int pattern) {
+    line_pattern = pattern;
+    return;
+}
+
 void bg_draw_line(
         struct bg_point * from_p, 
         struct bg_point * to_p) {
@@ -53,7 +64,8 @@ void bg_draw_line(
             p < point_list_p->head_p+point_list_p->length;
             ++p) {
         if (0 <= p->x && p->x < 400 && 0 <= p->y && p->y < 400) {
-            current[p->x][p->y] = 1;
+            current[p->x][p->y] = line_pattern & 0x1;
+            ROTATE_R(line_pattern);
         }
     }
 

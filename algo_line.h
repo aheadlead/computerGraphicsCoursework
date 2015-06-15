@@ -42,7 +42,8 @@ algo_line_bresenham(
     return ret;
 }
 
-struct bg_point_list * algo_line(int x0, int y0, int x1, int y1)
+struct bg_point_list * 
+algo_line(int x0, int y0, int x1, int y1)
 {
     const int dx=x1-x0,
               dy=y1-y0;

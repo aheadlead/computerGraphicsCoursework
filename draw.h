@@ -9,6 +9,7 @@
 #include "point.h"
 #include "point_list.h"
 
+void bg_draw_line_set_pattern(int pattern);
 void bg_draw_line(
         struct bg_point * from_p, 
         struct bg_point * to_p);
