@@ -5,7 +5,7 @@
 #ifndef NDEBUG
 #include <signal.h>  /* signal */
 #include <execinfo.h>  /* backtrace */
-#include <unistd.h>  /* STDRTT_FILENO */
+#include <unistd.h>  /* STDERR_FILENO */
 void debug_handler(int sig) {
     void *array[10];
     size_t size=backtrace(array, 10);
