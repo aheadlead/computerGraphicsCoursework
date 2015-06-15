@@ -46,6 +46,10 @@ extern bg_frame current;
 #define STATE_POLYLINE_WAITING_RELEASE_FIRST_POINT 10
 #define STATE_POLYLINE_WAITING_CLICK_SUBSEQUENT_POINT 11
 #define STATE_POLYLINE_WAITING_RELEASE_SUBSEQUENT_POINT 12
+#define STATE_BEZIERCURVE_WAITING_CLICK_FIRST_POINT 13
+#define STATE_BEZIERCURVE_WAITING_RELEASE_FIRST_POINT 14
+#define STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT 15
+#define STATE_BEZIERCURVE_WAITING_RELEASE_SUBSEQUENT_POINT 16
 
 static int state=STATE_LINE_WAITING_CLICK_FIRST_POINT;
 
@@ -109,6 +113,28 @@ void on_press(struct bg_point * pos_p) {
                 bg_point_list_append(&plist, pos_p);
                 state = STATE_POLYLINE_WAITING_RELEASE_SUBSEQUENT_POINT;
             }
+            break;
+
+        case STATE_BEZIERCURVE_WAITING_CLICK_FIRST_POINT:
+            bg_point_list_clear(&plist);  
+            bg_point_list_append(&plist, pos_p);  /* 记录第一个点的位置，加入点列表 */
+            state = STATE_BEZIERCURVE_WAITING_RELEASE_FIRST_POINT;
+            break;
+        case STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT:
+            if (timediff_since_last_press < double_click_threshold &&
+                    (pos_p->x == last_press_point.x && 
+                     pos_p->y == last_press_point.y)) {  /* 双击 */
+                bg_point_list_removeback(&plist);
+                bg_undo_restore();
+                bg_draw_beziercurve(&plist, NULL);
+                bg_undo_commit();
+                bg_draw_flush();
+                state = STATE_BEZIERCURVE_WAITING_CLICK_FIRST_POINT;
+            } else {  /* 单击 */
+                bg_point_list_append(&plist, pos_p);  /* 当前点加入点列表 */
+                state = STATE_BEZIERCURVE_WAITING_RELEASE_SUBSEQUENT_POINT;
+            }
+            break;
     }
 
     last_press_point = *pos_p;
@@ -152,6 +178,19 @@ void on_release(struct bg_point * pos_p) {
             bg_draw_flush();
             state = STATE_POLYLINE_WAITING_CLICK_SUBSEQUENT_POINT;
             break;
+
+        case STATE_BEZIERCURVE_WAITING_RELEASE_FIRST_POINT:
+            state = STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT;
+            break;
+        case STATE_BEZIERCURVE_WAITING_RELEASE_SUBSEQUENT_POINT:
+            bg_undo_restore();
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_3);  /* 切换到虚线 1/8 */
+            bg_draw_polyline(&plist, pos_p);  /* 画控制线 */
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_beziercurve(&plist, pos_p);
+            bg_draw_flush();
+            state = STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT;
+            break;
     }
     return;
 }
@@ -179,6 +218,16 @@ void on_move(struct bg_point * pos_p) {
             bg_draw_polyline(&plist, pos_p);
             bg_draw_flush();
             state = STATE_POLYLINE_WAITING_CLICK_SUBSEQUENT_POINT;
+            break;
+
+        case STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT:
+            bg_undo_restore();
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_3);  /* 切换到虚线 1/8 */
+            bg_draw_polyline(&plist, pos_p);  /* 画控制线 */
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_beziercurve(&plist, pos_p);
+            bg_draw_flush();
+            state = STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT; /* 指向自己的状态转移 */
             break;
     }
     return;
@@ -240,6 +289,11 @@ void menu_polyline() {
     return;
 }
 
+void menu_beziercurve() {
+    state = STATE_BEZIERCURVE_WAITING_CLICK_FIRST_POINT;
+    return;
+}
+
 void menu_clean() {
     bg_clean();
     bg_draw_flush();
@@ -276,6 +330,7 @@ int main(int argc, char ** argv) {
     bg_menu_bind("折线", menu_polyline);
     bg_menu_bind("矩形", menu_rectangle);
     bg_menu_bind("填充", menu_fill);
+    bg_menu_bind("贝塞尔曲线", menu_beziercurve);
     bg_menu_bind("清空画布", menu_clean);
     bg_menu_bind("撤销", menu_undo);
     bg_menu_bind("清空历史记录", menu_undo_clear);

@@ -1,3 +1,4 @@
+#include <stdio.h>  /* fprintf stderr */
 #include <assert.h>  /* assert */
 
 /* C(33, 16) = 1166803110
@@ -6,6 +7,7 @@
 static int comb_cache[34][35]={{0}};
 
 int bg_math_comb(int n, int k) {
+    /*fprintf(stderr, "shabi !!!!!!!!! %d %d\n", n, k);*/
 #ifndef NDEBUG
     assert(0 <= n && n <= 33);
     assert(0 <= k && k <= n);

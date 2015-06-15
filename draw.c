@@ -26,7 +26,7 @@ current;
 
 #include <math.h>  /* pow */
 #include "math_extension.h"  
-const int beziercurve_point_number=20;
+const int beziercurve_point_number=500;
 struct bg_point_list *
 algo_beziercurve_berzier(struct bg_point_list * plist) {
     /* N阶贝塞尔曲线 */
@@ -163,11 +163,13 @@ void bg_draw_beziercurve(
     size_t new_point_list_size= 
         (point_list_p->length+(NULL != last_point_p?1:0)) * sizeof(struct bg_point);
     struct bg_point_list * plist=
-        (struct bg_point_list *)malloc(new_point_list_size);
+        (struct bg_point_list *)malloc(sizeof(struct bg_point_list));
+    plist->head_p = malloc(new_point_list_size);
+    plist->length = (point_list_p->length+(NULL != last_point_p?1:0));  /* 之前漏掉了这一句，痛苦。 */
 
     /* copy */
-    memcpy( plist,
-            point_list_p, 
+    memcpy( plist->head_p,
+            point_list_p->head_p, 
             point_list_p->length*sizeof(struct bg_point));
 
     /* append if last_point_p is not null pointer */

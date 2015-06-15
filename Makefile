@@ -7,7 +7,7 @@ LIBS = -framework OpenGL \
 TARGET = main
 
 ifeq ($(VERSION), debug)
-CFLAGS = -O0 -g -Wall #-ftrapv -mllvm -asan-globals
+CFLAGS = -O0 -g -Wall -ftrapv -mllvm -asan-globals
 # -ftrapv - integer overflow check
 else
 CFLAGS = -O3 -DNDEBUG
