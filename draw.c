@@ -24,6 +24,44 @@ current;
 /* algorithm */
 #include "algo_line.h"
 
+#include <math.h>  /* pow */
+#include "math_extension.h"  
+const int beziercurve_point_number=500;
+struct bg_point_list *
+algo_beziercurve_berzier(struct bg_point_list * plist) {
+    /* N阶贝塞尔曲线 */
+    int n=plist->length;  /* 点的数量 */
+    struct bg_point * P=plist->head_p;  /* 点的列表 */
+    
+    struct bg_point_list * ret=  /* 返回的点列表 */
+        (struct bg_point_list *)malloc(sizeof(struct bg_point_list));
+    
+    /* 给返回的点的列表分配空间 */
+    ret->length = beziercurve_point_number;
+    ret->head_p = (struct bg_point *)malloc(
+            beziercurve_point_number * sizeof(struct bg_point));
+    struct bg_point * B=ret->head_p;
+
+    /* 计算点 */
+    for (int point_id=0;  /* 枚举曲线点 */
+            point_id<beziercurve_point_number; 
+            ++point_id) {
+        /* 参数方程中的参数t */
+        double t=(double)point_id/beziercurve_point_number;
+        /* 目标点的值 */
+        double target_x=0.0, target_y=0.0;
+        for (int i=0; i<n; ++i) {  /* sigma */
+            int comb=bg_math_comb(n, i);
+            double f=comb * pow(1-t, n-i) * pow(t, i);
+            target_x += (P[i].x)*f;
+            target_y += (P[i].y)*f;
+        }
+        B[point_id].x = target_x;
+        B[point_id].y = target_y;
+    }
+    return ret;
+}
+
 /* public */
 
 void bg_draw_line(
@@ -33,9 +71,9 @@ void bg_draw_line(
 #ifdef DEBUG_BG_DRAW_LINE
     printf("draw line from (%d, %d) to (%d, %d)\n", 
             from_p->x, from_p->y,
-            to_p->x, to_p->y);
-#endif  /* DEBUG_BG_DRAW_LINE */
-#ifndef NDEBUG
+            to_p->x, to_p->y); 
+#endif  /* DEBUG_BG_DRAW_LINE */ 
+#ifndef NDEBUG 
     /*
      *assert(0 < from_p->x && from_p->x < 400 &&
      *        0 < from_p->y && from_p->y < 400 &&
@@ -85,8 +123,43 @@ void bg_draw_polyline(
     return;
 }
 
-void bg_draw_curve(
-        struct bg_point_list * point_list_p) {
+void bg_draw_beziercurve(
+        struct bg_point_list * point_list_p,
+        struct bg_point * last_point_p) {
+    /* 将要待计算的控制点放到新的一块内存进行 
+     * 如果有 last_point_p 不为 NULL 的话
+     * 把 last_point 接上去
+     */
+    size_t new_point_list_size= 
+        (point_list_p->length+(NULL != last_point_p?1:0)) * sizeof(struct bg_point);
+    struct bg_point_list * plist=
+        (struct bg_point_list *)malloc(new_point_list_size);
+
+    /* copy */
+    memcpy( plist,
+            point_list_p, 
+            point_list_p->length*sizeof(struct bg_point));
+
+    /* append if last_point_p is not null pointer */
+    if (NULL != last_point_p) {
+        *(plist->head_p + point_list_p->length) = *last_point_p;
+    }
+
+    /* 将控制点传入算法函数 */
+    struct bg_point_list * to_draw_list=
+        algo_beziercurve_berzier(plist);
+
+    for (struct bg_point * p=to_draw_list->head_p;
+            p < to_draw_list->head_p+to_draw_list->length;
+            ++p) {
+        if (0 <= p->x && p->x < 400 && 0 <= p->y && p->y < 400) {
+            current[p->x][p->y] = 1;
+        }
+    }
+    free(to_draw_list); to_draw_list = NULL;
+
+    free(plist); plist = NULL;
+    return;
 }
 
 void bg_draw_rectangle(
