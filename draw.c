@@ -26,11 +26,20 @@ current;
 
 #include <math.h>  /* pow */
 #include "math_extension.h"  
-const int beziercurve_point_number=500;
+const int beziercurve_point_number=20;
 struct bg_point_list *
 algo_beziercurve_berzier(struct bg_point_list * plist) {
     /* N阶贝塞尔曲线 */
-    int n=plist->length;  /* 点的数量 */
+
+    /* B(t)=sigma(i, 0, n, C(n, i)*Pi*(1-t)^(n-i)*t^i;
+     * B 是贝塞尔曲线（坐标点构成）
+     * t 是参数变量
+     * n 是点数减去一（请注意，点的编号是从0开始编号的）
+     * Pi 是第 i 个点的坐标
+     */
+
+    /* n的值 */
+    int n=plist->length-1;  
     struct bg_point * P=plist->head_p;  /* 点的列表 */
     
     struct bg_point_list * ret=  /* 返回的点列表 */
@@ -50,15 +59,24 @@ algo_beziercurve_berzier(struct bg_point_list * plist) {
         double t=(double)point_id/beziercurve_point_number;
         /* 目标点的值 */
         double target_x=0.0, target_y=0.0;
-        for (int i=0; i<n; ++i) {  /* sigma */
+        for (int i=0; i<=n; ++i) {  /* sigma */
             int comb=bg_math_comb(n, i);
             double f=comb * pow(1-t, n-i) * pow(t, i);
             target_x += (P[i].x)*f;
             target_y += (P[i].y)*f;
         }
-        B[point_id].x = target_x;
-        B[point_id].y = target_y;
+        B[point_id].x = (int)target_x;
+        B[point_id].y = (int)target_y;
     }
+    /* TODO debugging */
+    for (int i=0; 
+            i < ret->length;
+            ++i) {
+        printf("(%d, %d) => ", ret->head_p[i].x, ret->head_p[i].y);
+    }
+    putchar('\n');
+    /* TODO the end of debugging */
+
     return ret;
 }
 
@@ -69,7 +87,7 @@ algo_beziercurve_berzier(struct bg_point_list * plist) {
  */
 #define ROTATE_R(x) \
     (x) = ((x&0x1) << (8*sizeof(x)-1))|((unsigned)x>>1);
-static int line_pattern=1;
+static int line_pattern=0xFFFFFFFF;
 void bg_draw_line_set_pattern(int pattern) {
     line_pattern = pattern;
     return;
@@ -158,17 +176,14 @@ void bg_draw_beziercurve(
     }
 
     /* 将控制点传入算法函数 */
-    struct bg_point_list * to_draw_list=
+    struct bg_point_list * to_draw_list_p=
         algo_beziercurve_berzier(plist);
 
-    for (struct bg_point * p=to_draw_list->head_p;
-            p < to_draw_list->head_p+to_draw_list->length;
-            ++p) {
-        if (0 <= p->x && p->x < 400 && 0 <= p->y && p->y < 400) {
-            current[p->x][p->y] = 1;
-        }
-    }
-    free(to_draw_list); to_draw_list = NULL;
+    /* 画图 */
+    /* 实际上调用画折线的函数 */
+    bg_draw_polyline(to_draw_list_p, NULL);
+
+    free(to_draw_list_p); to_draw_list_p = NULL;
 
     free(plist); plist = NULL;
     return;

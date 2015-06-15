@@ -9,8 +9,15 @@
 void debug_handler(int sig) {
     void *array[10];
     size_t size=backtrace(array, 10);
+
     fprintf(stderr, "Error: signal %d:\n", sig);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
+
+    /* additional instructions */
+    if (sig == SIGILL){
+        fprintf(stderr, "This error may raised when integer overflowing.\n");
+    }
+
     exit(1);
 }
 #endif  /* NDEBUG */
@@ -19,6 +26,7 @@ void debug_handler(int sig) {
 #include "base_graphics.h"
 #include "input.h"
 #include "point.h"
+#include "point_list.h"
 #include "draw.h"
 #include "undo.h"
 
@@ -255,6 +263,7 @@ int main(int argc, char ** argv) {
 #ifndef NDEBUG
     signal(SIGSEGV, debug_handler);
     signal(SIGABRT, debug_handler);
+    signal(SIGILL, debug_handler);
 #endif  /* NDEBUG */
 
     bg_init();
