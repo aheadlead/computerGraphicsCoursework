@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>  /* exit */
 #include <time.h>  /* time difftime */
+
 #ifndef NDEBUG
 #include <signal.h>  /* signal */
 #include <execinfo.h>  /* backtrace */
@@ -29,6 +30,7 @@ void debug_handler(int sig) {
 #include "point_list.h"
 #include "draw.h"
 #include "undo.h"
+#include "math_extension.h"
 
 #include "frame_cache.h"
 extern bg_frame current;
@@ -50,6 +52,10 @@ extern bg_frame current;
 #define STATE_BEZIERCURVE_WAITING_RELEASE_FIRST_POINT 14
 #define STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT 15
 #define STATE_BEZIERCURVE_WAITING_RELEASE_SUBSEQUENT_POINT 16
+#define STATE_CIRCLE_WAITING_CLICK_CENTER_POINT 17
+#define STATE_CIRCLE_WAITING_RELEASE_CENTER_POINT 18
+#define STATE_CIRCLE_WAITING_CLICK_POINT_ON_CIRCLE 19
+#define STATE_CIRCLE_WAITING_RELEASE_POINT_ON_CIRCLE 20
 
 static int state=STATE_LINE_WAITING_CLICK_FIRST_POINT;
 
@@ -57,7 +63,8 @@ static struct bg_point from;
 static struct bg_point_list plist;
 static time_t last_press=0;
 static struct bg_point last_press_point;
-static const double double_click_threshold=0.1;
+static struct bg_point center_point;
+static const double double_click_threshold=0.1;  /* 双击判定阈值 0.1秒 */
 
 void on_press(struct bg_point * pos_p) {
 #ifndef NDEBUG
@@ -135,6 +142,13 @@ void on_press(struct bg_point * pos_p) {
                 state = STATE_BEZIERCURVE_WAITING_RELEASE_SUBSEQUENT_POINT;
             }
             break;
+
+        case STATE_CIRCLE_WAITING_CLICK_CENTER_POINT:
+            state = STATE_CIRCLE_WAITING_RELEASE_CENTER_POINT;
+            break;
+        case STATE_CIRCLE_WAITING_CLICK_POINT_ON_CIRCLE:
+            state = STATE_CIRCLE_WAITING_RELEASE_POINT_ON_CIRCLE;
+            break;
     }
 
     last_press_point = *pos_p;
@@ -191,6 +205,21 @@ void on_release(struct bg_point * pos_p) {
             bg_draw_flush();
             state = STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT;
             break;
+
+        case STATE_CIRCLE_WAITING_RELEASE_POINT_ON_CIRCLE:
+            bg_undo_restore();
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_circle(  /* 画圆 */
+                    &center_point, 
+                    euclidian_distance(center_point, *pos_p));
+            bg_undo_commit();  /* 提交更改 */
+            bg_draw_flush();
+            state = STATE_CIRCLE_WAITING_CLICK_CENTER_POINT;
+            break;
+        case STATE_CIRCLE_WAITING_RELEASE_CENTER_POINT:
+            center_point = *pos_p;
+            state = STATE_CIRCLE_WAITING_CLICK_POINT_ON_CIRCLE;
+            break;
     }
     return;
 }
@@ -229,6 +258,18 @@ void on_move(struct bg_point * pos_p) {
             bg_draw_flush();
             state = STATE_BEZIERCURVE_WAITING_CLICK_SUBSEQUENT_POINT; /* 指向自己的状态转移 */
             break;
+
+        case STATE_CIRCLE_WAITING_CLICK_POINT_ON_CIRCLE:
+            bg_undo_restore();
+            bg_draw_circle(  /* 画圆 */
+                    &center_point, 
+                    euclidian_distance(center_point, *pos_p));
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_3);  /* 切换到虚线 1/8 */
+            bg_draw_line(&center_point, pos_p);
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_flush();
+            /* state 不变 */
+            break;
     }
     return;
 }
@@ -265,6 +306,22 @@ void on_drag(struct bg_point * pos_p) {
             bg_draw_flush();
             state = STATE_RECTANGLE_WAITING_RELEASE_SECOND_POINT;
             break;
+
+        case STATE_CIRCLE_WAITING_RELEASE_CENTER_POINT:
+            center_point = *pos_p;
+            state = STATE_CIRCLE_WAITING_RELEASE_POINT_ON_CIRCLE;
+            break;
+        case STATE_CIRCLE_WAITING_RELEASE_POINT_ON_CIRCLE:
+            bg_undo_restore();
+            bg_draw_circle(  /* 画圆 */
+                    &center_point, 
+                    euclidian_distance(center_point, *pos_p));
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_3);  /* 切换到虚线 1/8 */
+            bg_draw_line(&center_point, pos_p);
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_flush();
+            /* state 不变 */
+            break;
     }
     return;
 }
@@ -291,6 +348,11 @@ void menu_polyline() {
 
 void menu_beziercurve() {
     state = STATE_BEZIERCURVE_WAITING_CLICK_FIRST_POINT;
+    return;
+}
+
+void menu_circle() {
+    state = STATE_CIRCLE_WAITING_CLICK_CENTER_POINT;
     return;
 }
 
@@ -331,6 +393,7 @@ int main(int argc, char ** argv) {
     bg_menu_bind("矩形", menu_rectangle);
     bg_menu_bind("填充", menu_fill);
     bg_menu_bind("贝塞尔曲线", menu_beziercurve);
+    bg_menu_bind("圆", menu_circle);
     bg_menu_bind("清空画布", menu_clean);
     bg_menu_bind("撤销", menu_undo);
     bg_menu_bind("清空历史记录", menu_undo_clear);

@@ -24,6 +24,52 @@ current;
 /* algorithm */
 #include "algo_line.h"
 #include "algo_beziercurve.h"
+struct bg_point_list * 
+algo_draw_circle(
+        struct bg_point * center_p,
+        double radius) {
+    struct bg_point_list * ret=
+        (struct bg_point_list *)malloc(sizeof(struct bg_point_list));
+    ret->head_p = NULL;
+    ret->length = 0;
+
+    /* 从教材113页复制 */
+    int r=(int)radius;
+    int x, y, d;
+    x=0; y=r; d=1-r;
+    while (x <= y) {
+    
+        /* 教材里面的 CirclePoint 函数 */
+        struct bg_point tmp;
+        bg_point_list_append(ret, (tmp.x=x, tmp.y=y, &tmp));
+        bg_point_list_append(ret, (tmp.x=y, tmp.y=x, &tmp));
+        bg_point_list_append(ret, (tmp.x=-y, tmp.y=x, &tmp));
+        bg_point_list_append(ret, (tmp.x=-x, tmp.y=y, &tmp));
+        bg_point_list_append(ret, (tmp.x=-x, tmp.y=-y, &tmp));
+        bg_point_list_append(ret, (tmp.x=-y, tmp.y=-x, &tmp));
+        bg_point_list_append(ret, (tmp.x=y, tmp.y=-x, &tmp));
+        bg_point_list_append(ret, (tmp.x=x, tmp.y=-y, &tmp));
+
+        if (d < 0) {
+            d += 2*x + 3;
+        } else {
+            d += 2*(x-y)+5;
+            y -= 1;
+        }
+        x += 1;
+    }
+
+    /* 将圆心平移到 center_p 所指向的点 */
+    for (struct bg_point * p=ret->head_p;
+            p<ret->head_p+ret->length;
+            ++p) {
+        p->x += center_p->x;
+        p->y += center_p->y;
+    }
+
+    return ret;
+}
+
 
 /* public */
 
@@ -41,17 +87,18 @@ void bg_draw_line_set_pattern(int pattern) {
 void bg_draw_line(
         struct bg_point * from_p, 
         struct bg_point * to_p) {
-#define DEBUG_BG_DRAW_LINE
 #ifdef DEBUG_BG_DRAW_LINE
     printf("draw line from (%d, %d) to (%d, %d)\n", 
             from_p->x, from_p->y,
             to_p->x, to_p->y); 
 #endif  /* DEBUG_BG_DRAW_LINE */ 
 #ifndef NDEBUG 
+#ifdef CHECK_LINE_OUT_OF_BOUND
     assert(0 <= from_p->x && from_p->x < 400);
     assert(0 <= from_p->y && from_p->y < 400);
     assert(0 <= to_p->x && to_p->x < 400);
     assert(0 <= to_p->y && to_p->y < 400);
+#endif  /* CHECK_LINE_OUT_OF_BOUND */
 #endif  /* NDEBUG */
 
     struct bg_point_list * point_list_p=
@@ -150,7 +197,21 @@ void bg_draw_rectangle(
 void bg_draw_circle(
         struct bg_point * center_p, 
         double radius) {
+    /* 待画点列表 */
+    struct bg_point_list * to_draw_list_p=
+        algo_draw_circle(center_p, radius);
+    /* alias */
+    const struct bg_point * P=to_draw_list_p->head_p;
+    const size_t Pn=to_draw_list_p->length;
+    /* draw */
+    for (const struct bg_point *p=P; p<P+Pn; ++p) {
+        if (!(0 <= p->x && p->x < 400)) { continue; }
+        if (!(0 <= p->y && p->y < 400)) { continue; }
+        current[p->x][p->y] = 1;
+    }
 
+    free(to_draw_list_p); to_draw_list_p = NULL;
+    return;
 }
 
 struct __point_list_node {
