@@ -48,12 +48,10 @@ void bg_draw_line(
             to_p->x, to_p->y); 
 #endif  /* DEBUG_BG_DRAW_LINE */ 
 #ifndef NDEBUG 
-    /*
-     *assert(0 < from_p->x && from_p->x < 400 &&
-     *        0 < from_p->y && from_p->y < 400 &&
-     *        0 < to_p->x && to_p->x < 400 &&
-     *        0 < to_p->y && to_p->y < 400);
-     */
+    assert(0 <= from_p->x && from_p->x < 400);
+    assert(0 <= from_p->y && from_p->y < 400);
+    assert(0 <= to_p->x && to_p->x < 400);
+    assert(0 <= to_p->y && to_p->y < 400);
 #endif  /* NDEBUG */
 
     struct bg_point_list * point_list_p=
