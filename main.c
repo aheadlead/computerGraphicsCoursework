@@ -66,6 +66,9 @@ static struct bg_point last_press_point;
 static struct bg_point center_point;
 static const double double_click_threshold=0.1;  /* 双击判定阈值 0.1秒 */
 
+static int enable_selection;
+static struct bg_point selection_x, selection_y;
+
 void on_press(struct bg_point * pos_p) {
 #ifndef NDEBUG
     printf("on_press() %d %d %d\n", pos_p->x, pos_p->y, state);
@@ -375,6 +378,12 @@ void menu_undo_clear() {
     return;
 }
 
+void menu_dummy() {
+    /* for separator */
+    fprintf(stderr, "我tm一个分隔符点你妹啊\n");
+    return;
+}
+
 int main(int argc, char ** argv) {
 #ifndef NDEBUG
     signal(SIGSEGV, debug_handler);
@@ -391,9 +400,15 @@ int main(int argc, char ** argv) {
     bg_menu_bind("直线", menu_line);
     bg_menu_bind("折线", menu_polyline);
     bg_menu_bind("矩形", menu_rectangle);
-    bg_menu_bind("填充", menu_fill);
-    bg_menu_bind("贝塞尔曲线", menu_beziercurve);
+    bg_menu_bind("--------", menu_dummy);
+
     bg_menu_bind("圆", menu_circle);
+    bg_menu_bind("贝塞尔曲线", menu_beziercurve);
+    bg_menu_bind("--------", menu_dummy);
+
+    bg_menu_bind("填充", menu_fill);
+    bg_menu_bind("--------", menu_dummy);
+    
     bg_menu_bind("清空画布", menu_clean);
     bg_menu_bind("撤销", menu_undo);
     bg_menu_bind("清空历史记录", menu_undo_clear);

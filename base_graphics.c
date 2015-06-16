@@ -22,7 +22,6 @@ current;
 /* private functions */
 static void 
 __flush() {
-    printf("__flush()\n");
     glClear(GL_COLOR_BUFFER_BIT);
 
     struct bg_point p;  /* p is temporary variable */
@@ -103,14 +102,3 @@ bg_mainloop()
     return;
 }
 
-/*
-void bg_selection_move(
-        bg_point * LU_p,
-        bg_point * RD_p,
-        bg_point * delta);
-
-void bg_selection_rotate(
-        bg_point * LU_p,
-        bg_point * RD_p,
-        double radian);
-*/
