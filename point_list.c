@@ -1,5 +1,19 @@
+#include <stdio.h>  /* stderr fprintf */
+
 #include "point.h"
 #include "point_list.h"
+
+void bg_point_list_print(
+        struct bg_point_list * plist) {
+    fprintf(stderr, "bg_point_list @ %p: ", plist);
+    for (struct bg_point * p=plist->head_p;
+            p<plist->head_p+plist->length; 
+            ++p) {
+        fprintf(stderr, "(%d, %d) -> ", p->x, p->y);
+    }
+    fprintf(stderr, "\n");
+    return;
+}
 
 /* bg_point_list_append()
  * Allocate a new list and it is {sizeof(struct bg_point)} bytes bigger than olds,

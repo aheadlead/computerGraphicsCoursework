@@ -19,6 +19,11 @@ struct bg_point_list {
     size_t length;  /* the number of elements */
 };
 
+/* 打印列表 */
+void bg_point_list_print(
+        struct bg_point_list * plist);
+
+
 /* bg_point_list_append()
  * Allocate a new list and it is {sizeof(struct bg_point)} bytes bigger than olds,
  * then copy the content from olds to news. The old list would be freed.
