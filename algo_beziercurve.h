@@ -13,7 +13,7 @@
 #include "point_list.h"
 #include "math_extension.h"  
 
-const int beziercurve_point_number=500;
+const int beziercurve_point_number=300;
 struct bg_point_list *
 algo_beziercurve_berzier(struct bg_point_list * plist) {
     /* N阶贝塞尔曲线 */
