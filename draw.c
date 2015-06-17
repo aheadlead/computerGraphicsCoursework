@@ -70,6 +70,62 @@ algo_draw_circle(
     return ret;
 }
 
+struct bg_point_list *
+algo_draw_rotate(
+        struct bg_point * selection_from,
+        struct bg_point * selection_to,
+        struct bg_point * vec_from,
+        struct bg_point * vec_to) {
+    /* 准备点 */
+    struct bg_point A, B, C;
+    A.x = (selection_from->x + selection_to->x)/2;
+    A.y = (selection_from->y + selection_to->y)/2;
+    B = *vec_from;
+    C = *vec_to;
+    double a=euclidian_distance(B, C);
+    double b=euclidian_distance(A, C);
+    double c=euclidian_distance(A, B);
+    /* 余弦定理 */
+    double cosA=(b*b+c*c-a*a)/(2*b*c);
+    double sinA=sqrt(1-cosA*cosA);
+
+    /* 准备返回的点列表 */
+    struct bg_point_list * ret_p;
+    ret_p = (struct bg_point_list *)malloc(sizeof(struct bg_point_list));
+    ret_p->head_p = NULL;
+    ret_p->length = 0;
+    
+    /* 对每个点做变换 */
+
+    /* 确定对缓冲区的迭代边界 */
+#define MIN(a, b) ((a)>(b)?(b):(a))
+#define MAX(a, b) ((a)>(b)?(a):(b))
+    int minX, maxX;
+    int minY, maxY;
+    minX = MIN(selection_from->x, selection_to->x);
+    maxX = MAX(selection_from->x, selection_to->x);
+    minY = MIN(selection_from->y, selection_to->y);
+    maxY = MAX(selection_from->y, selection_to->y);
+#undef MIN
+#undef MAX
+
+    /* 迭代 */
+    for (int x=minX; x<=maxX; ++x){
+        for (int y=minY; y<=maxY; ++y) {
+            if (current[x][y] > 0) {  /* 对黑色点进行处理 */
+                struct bg_point new;
+                x -= A.x, y -= A.y;
+                new.x = A.x + (int)(x*cosA-y*sinA);  /* 旋转的那个矩阵 */
+                new.y = A.y + (int)(x*sinA+y*cosA);
+                x += A.x, y += A.y;
+                bg_point_list_append(ret_p, &new);
+            }
+        }
+    }
+
+    return ret_p;
+}
+
 
 /* public */
 
@@ -291,3 +347,48 @@ void bg_draw_flush() {
     return;
 }
 
+/* 这个函数将点 selection_from 和 selection_to 所描述的选区，以其几何中心旋转。
+ * 旋转角度 A 由点 vec_from 到 vec_to 所组成的向量决定，这两个点与旋转中心构成一
+ * 个三角形。向量边所对的角就是要旋转的角。
+ */
+void bg_draw_rotate(
+        struct bg_point * selection_from,
+        struct bg_point * selection_to,
+        struct bg_point * vec_from,
+        struct bg_point * vec_to) {
+    struct bg_point_list * to_draw_list=
+        algo_draw_rotate(
+                selection_from, selection_to,
+                vec_from, vec_to);
+
+    /* 确定对缓冲区的迭代边界 */
+#define MIN(a, b) ((a)>(b)?(b):(a))
+#define MAX(a, b) ((a)>(b)?(a):(b))
+    int minX, maxX;
+    int minY, maxY;
+    minX = MIN(selection_from->x, selection_to->x);
+    maxX = MAX(selection_from->x, selection_to->x);
+    minY = MIN(selection_from->y, selection_to->y);
+    maxY = MAX(selection_from->y, selection_to->y);
+#undef MIN
+#undef MAX
+
+    /* 迭代以清空选区 */
+    for (int x=minX; x<=maxX; ++x){
+        for (int y=minY; y<=maxY; ++y) {
+            current[x][y] = 0;
+        }
+    }
+    
+    /* 绘制旋转后的情况 */
+    for (struct bg_point * p=to_draw_list->head_p;
+            p<to_draw_list->head_p+to_draw_list->length;
+            ++p){
+        if (0 <= p->x && p->x < 400 &&
+            0 <= p->y && p->y < 400) {
+            current[p->x][p->y] = 1;
+        }
+    } 
+
+    return;
+}

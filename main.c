@@ -56,6 +56,10 @@ extern bg_frame current;
 #define STATE_CIRCLE_WAITING_RELEASE_CENTER_POINT 18
 #define STATE_CIRCLE_WAITING_CLICK_POINT_ON_CIRCLE 19
 #define STATE_CIRCLE_WAITING_RELEASE_POINT_ON_CIRCLE 20
+#define STATE_SELECTION_WAITING_CLICK_POINT 21
+#define STATE_SELECTION_WAITING_RELEASE_POINT 22
+#define STATE_ROTATE_WAITING_PRESS 23
+#define STATE_ROTATE_WAITING_RELEASE 24
 
 static int state=STATE_LINE_WAITING_CLICK_FIRST_POINT;
 
@@ -66,8 +70,7 @@ static struct bg_point last_press_point;
 static struct bg_point center_point;
 static const double double_click_threshold=0.1;  /* 双击判定阈值 0.1秒 */
 
-static int enable_selection;
-static struct bg_point selection_x, selection_y;
+static struct bg_point selection_from, selection_to;
 
 void on_press(struct bg_point * pos_p) {
 #ifndef NDEBUG
@@ -152,6 +155,16 @@ void on_press(struct bg_point * pos_p) {
         case STATE_CIRCLE_WAITING_CLICK_POINT_ON_CIRCLE:
             state = STATE_CIRCLE_WAITING_RELEASE_POINT_ON_CIRCLE;
             break;
+
+        case STATE_SELECTION_WAITING_CLICK_POINT:
+            from = *pos_p;  /* 记录选区的第一个点的位置 */
+            state = STATE_SELECTION_WAITING_RELEASE_POINT;
+            break;
+
+        case STATE_ROTATE_WAITING_PRESS:
+            from = *pos_p; 
+            state = STATE_ROTATE_WAITING_RELEASE;
+            break;
     }
 
     last_press_point = *pos_p;
@@ -222,6 +235,24 @@ void on_release(struct bg_point * pos_p) {
         case STATE_CIRCLE_WAITING_RELEASE_CENTER_POINT:
             center_point = *pos_p;
             state = STATE_CIRCLE_WAITING_CLICK_POINT_ON_CIRCLE;
+            break;
+
+        case STATE_SELECTION_WAITING_RELEASE_POINT:
+            selection_from = from;
+            selection_to = *pos_p;
+            state = STATE_SELECTION_WAITING_CLICK_POINT;
+            break;
+
+        case STATE_ROTATE_WAITING_RELEASE:
+            bg_undo_restore();
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_rotate(
+                    &selection_from, &selection_to,
+                    &from, pos_p);
+            bg_undo_commit();
+            bg_draw_flush();
+            selection_from.x = selection_from.y = 400;
+            selection_to.x = selection_to.y = 400;
             break;
     }
     return;
@@ -320,41 +351,76 @@ void on_drag(struct bg_point * pos_p) {
                     &center_point, 
                     euclidian_distance(center_point, *pos_p));
             bg_draw_line_set_pattern(BG_LINE_PATTERN_3);  /* 切换到虚线 1/8 */
-            bg_draw_line(&center_point, pos_p);
+            bg_draw_line(&center_point, pos_p);  /* 辅助线 */
             bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
             bg_draw_flush();
             /* state 不变 */
             break;
+
+        case STATE_SELECTION_WAITING_RELEASE_POINT:
+            bg_undo_restore();
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_2);  /* 切换到虚线 1/4 */
+            bg_draw_rectangle(&from, pos_p);
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_flush();
+            /* state 不变 */
+            break;
+
+        case STATE_ROTATE_WAITING_RELEASE:
+            bg_undo_restore();
+            /* 为了避免辅助线被“刷白”的选区遮挡，要后画辅助线 */
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_rotate(
+                    &selection_from, &selection_to,
+                    &from, pos_p);
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_3);  /* 切换到虚线 1/4 */
+            bg_draw_line(&from, pos_p);  /* 辅助线 */
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_flush();
+            /* state 不变 */
+            return;
     }
     return;
 }
 
 void menu_line() {
+    bg_undo_restore();
+    bg_draw_flush();
     state = STATE_LINE_WAITING_CLICK_FIRST_POINT;
     return;
 }
 
 void menu_rectangle() {
+    bg_undo_restore();
+    bg_draw_flush();
     state = STATE_RECTANGLE_WAITING_CLICK_FIRST_POINT;
     return;
 }
 
 void menu_fill() {
+    bg_undo_restore();
+    bg_draw_flush();
     state = STATE_FILL_WAITING_CLICK;
     return;
 }
 
 void menu_polyline() {
+    bg_undo_restore();
+    bg_draw_flush();
     state = STATE_POLYLINE_WAITING_CLICK_FIRST_POINT;
     return;
 }
 
 void menu_beziercurve() {
+    bg_undo_restore();
+    bg_draw_flush();
     state = STATE_BEZIERCURVE_WAITING_CLICK_FIRST_POINT;
     return;
 }
 
 void menu_circle() {
+    bg_undo_restore();
+    bg_draw_flush();
     state = STATE_CIRCLE_WAITING_CLICK_CENTER_POINT;
     return;
 }
@@ -366,10 +432,9 @@ void menu_clean() {
 }
 
 void menu_undo() {
-    bg_undo_pop();
-    bg_undo_restore();
+    bg_undo_pop();  /* 删除在回退堆栈的当前帧 */
+    bg_undo_restore();  /* 回退上一帧的画面 */
     bg_draw_flush();
-    fprintf(stderr, "caonima\n");
     return;
 }
 
@@ -383,6 +448,34 @@ void menu_dummy() {
     fprintf(stderr, "我tm一个分隔符点你妹啊\n");
     return;
 }
+
+void menu_select_selection() {
+    bg_undo_restore();
+    /* 之前可能有过选区，把选区重新画上去 */
+    bg_draw_line_set_pattern(BG_LINE_PATTERN_2);  /* 切换到虚线 1/4 */
+    bg_draw_rectangle(&selection_from, &selection_to);
+    bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+    bg_draw_flush();
+    state = STATE_SELECTION_WAITING_CLICK_POINT;
+    return;
+}
+
+void menu_clean_selection() {
+    selection_from.x = 400;  /* out of the screen */
+    selection_from.y = 400;
+    selection_to.x = 400;
+    selection_to.y = 400;
+    bg_undo_restore();
+    bg_draw_flush();
+    return;
+}
+
+void menu_rotate() {
+    bg_undo_restore();
+    bg_draw_flush();
+    state = STATE_ROTATE_WAITING_PRESS;
+    return;
+}   
 
 int main(int argc, char ** argv) {
 #ifndef NDEBUG
@@ -409,6 +502,12 @@ int main(int argc, char ** argv) {
     bg_menu_bind("填充", menu_fill);
     bg_menu_bind("--------", menu_dummy);
     
+    bg_menu_bind("选择选区", menu_select_selection);
+    bg_menu_bind("清除选区", menu_clean_selection);
+    bg_menu_bind("旋转", menu_rotate);
+    /*bg_menu_bind("平移", menu_transform);*/
+    bg_menu_bind("--------", menu_dummy);
+
     bg_menu_bind("清空画布", menu_clean);
     bg_menu_bind("撤销", menu_undo);
     bg_menu_bind("清空历史记录", menu_undo_clear);
