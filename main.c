@@ -176,6 +176,10 @@ void on_release(struct bg_point * pos_p) {
     printf("on_release() %d %d %d\n", pos_p->x, pos_p->y, state);
 #endif  /* NDEBUG */
 
+    /* for SELECTION in switch */
+    int minX, maxX;
+    int minY, maxY;
+
     switch (state) {
         case STATE_LINE_WAITING_RELEASE_FIRST_POINT:
             state = STATE_LINE_WAITING_CLICK_SECOND_POINT;
@@ -240,14 +244,12 @@ void on_release(struct bg_point * pos_p) {
         case STATE_SELECTION_WAITING_RELEASE_POINT:
 #define MIN(a, b) ((a)>(b)?(b):(a))
 #define MAX(a, b) ((a)>(b)?(a):(b))
-            int minX, maxX;
-            int minY, maxY;
             selection_from = from;
             selection_to = *pos_p;
-            minX = MIN(selection_from->x, selection_to->x);
-            maxX = MAX(selection_from->x, selection_to->x);
-            minY = MIN(selection_from->y, selection_to->y);
-            maxY = MAX(selection_from->y, selection_to->y);
+            int minX = MIN(selection_from.x, selection_to.x);
+            int maxX = MAX(selection_from.x, selection_to.x);
+            int minY = MIN(selection_from.y, selection_to.y);
+            int maxY = MAX(selection_from.y, selection_to.y);
             selection_from.x = minX;
             selection_from.y = minY;
             selection_to.x = maxX;
