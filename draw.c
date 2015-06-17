@@ -96,22 +96,9 @@ algo_draw_rotate(
     ret_p->length = 0;
     
     /* 对每个点做变换 */
-
-    /* 确定对缓冲区的迭代边界 */
-#define MIN(a, b) ((a)>(b)?(b):(a))
-#define MAX(a, b) ((a)>(b)?(a):(b))
-    int minX, maxX;
-    int minY, maxY;
-    minX = MIN(selection_from->x, selection_to->x);
-    maxX = MAX(selection_from->x, selection_to->x);
-    minY = MIN(selection_from->y, selection_to->y);
-    maxY = MAX(selection_from->y, selection_to->y);
-#undef MIN
-#undef MAX
-
     /* 迭代 */
-    for (int x=minX; x<=maxX; ++x){
-        for (int y=minY; y<=maxY; ++y) {
+    for (int x=selection_from.x; x<=selection_to.x; ++x){
+        for (int y=selection_from.y; y<=selection_to.y; ++y) {
             if (current[x][y] > 0) {  /* 对黑色点进行处理 */
                 struct bg_point new;
                 x -= A.x, y -= A.y;
@@ -361,21 +348,9 @@ void bg_draw_rotate(
                 selection_from, selection_to,
                 vec_from, vec_to);
 
-    /* 确定对缓冲区的迭代边界 */
-#define MIN(a, b) ((a)>(b)?(b):(a))
-#define MAX(a, b) ((a)>(b)?(a):(b))
-    int minX, maxX;
-    int minY, maxY;
-    minX = MIN(selection_from->x, selection_to->x);
-    maxX = MAX(selection_from->x, selection_to->x);
-    minY = MIN(selection_from->y, selection_to->y);
-    maxY = MAX(selection_from->y, selection_to->y);
-#undef MIN
-#undef MAX
-
     /* 迭代以清空选区 */
-    for (int x=minX; x<=maxX; ++x){
-        for (int y=minY; y<=maxY; ++y) {
+    for (int x=selection_from.x; x<=selection_to.x; ++x){
+        for (int y=selection_from.y; y<=selection_to.y; ++y) {
             current[x][y] = 0;
         }
     }

@@ -238,8 +238,22 @@ void on_release(struct bg_point * pos_p) {
             break;
 
         case STATE_SELECTION_WAITING_RELEASE_POINT:
+#define MIN(a, b) ((a)>(b)?(b):(a))
+#define MAX(a, b) ((a)>(b)?(a):(b))
+            int minX, maxX;
+            int minY, maxY;
             selection_from = from;
             selection_to = *pos_p;
+            minX = MIN(selection_from->x, selection_to->x);
+            maxX = MAX(selection_from->x, selection_to->x);
+            minY = MIN(selection_from->y, selection_to->y);
+            maxY = MAX(selection_from->y, selection_to->y);
+            selection_from.x = minX;
+            selection_from.y = minY;
+            selection_to.x = maxX;
+            selection_to.y = maxY;
+#undef MIN
+#undef MAX
             state = STATE_SELECTION_WAITING_CLICK_POINT;
             break;
 
