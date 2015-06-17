@@ -1,12 +1,12 @@
 /* Base graphics library for coursework 
  *
- * Frame Cache
+ * Frame Buffer
  *
  * Header file only.
  */
 
-#ifndef BG_FRAMECACHE
-#define BG_FRAMECACHE
+#ifndef BG_FRAMEBUFFER
+#define BG_FRAMEBUFFER
 
 /* This is a temporary frame buffer implementation for canvas editing in this
  * project. I had tried to learn related knowledge for canvas editing in OpenGL,
@@ -24,4 +24,4 @@
 typedef unsigned int bg_frame[400][400];
 bg_frame current;
 
-#endif  /* BG_FRAMECACHE */
+#endif  /* BG_FRAMEBUFFER */
