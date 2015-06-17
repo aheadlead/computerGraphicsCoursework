@@ -18,6 +18,9 @@
 #include "point.h"
 #include "point_list.h"
 #include "frame_cache.h"
+#define IN_SCREEN(x, y) \
+    (0 <= (x) && (x) < 400 && \
+     0 <= (y) && (y) < 400)
 extern bg_frame 
 current;
 
@@ -97,8 +100,8 @@ algo_draw_rotate(
     
     /* 对每个点做变换 */
     /* 迭代 */
-    for (int x=selection_from.x; x<=selection_to.x; ++x){
-        for (int y=selection_from.y; y<=selection_to.y; ++y) {
+    for (int x=selection_from->x; x<=selection_to->x; ++x){
+        for (int y=selection_from->y; y<=selection_to->y; ++y) {
             if (current[x][y] > 0) {  /* 对黑色点进行处理 */
                 struct bg_point new;
                 x -= A.x, y -= A.y;
@@ -349,8 +352,8 @@ void bg_draw_rotate(
                 vec_from, vec_to);
 
     /* 迭代以清空选区 */
-    for (int x=selection_from.x; x<=selection_to.x; ++x){
-        for (int y=selection_from.y; y<=selection_to.y; ++y) {
+    for (int x=selection_from->x; x<=selection_to->x; ++x){
+        for (int y=selection_from->y; y<=selection_to->y; ++y) {
             current[x][y] = 0;
         }
     }
@@ -358,12 +361,57 @@ void bg_draw_rotate(
     /* 绘制旋转后的情况 */
     for (struct bg_point * p=to_draw_list->head_p;
             p<to_draw_list->head_p+to_draw_list->length;
-            ++p){
+            ++p) {
         if (0 <= p->x && p->x < 400 &&
             0 <= p->y && p->y < 400) {
             current[p->x][p->y] = 1;
         }
     } 
+
+    return;
+}
+
+/* 点 selection_from 和点 selection_to 描述了一个选区。
+ * 这个函数的操作就是把这个选区以 delta 描述的向量，平移。
+ */
+void bg_draw_transform(
+        struct bg_point * selection_from,
+        struct bg_point * selection_to,
+        struct bg_point * delta) {
+    size_t stage_length=
+        (selection_to->x - selection_from->x) * (selection_to->y - selection_from->y);
+    int * stage=
+        (int *)malloc(sizeof(int)*stage_length);
+    /* 迭代指针 */
+    int * p=stage;
+
+    /* 备份待移动区域 */
+    for (int x=selection_from->x; x<selection_to->x; ++x) {
+        for (int y=selection_from->y; y<selection_to->y; ++y) {
+            *p = current[x][y];
+            p += 1;
+        }
+    }
+
+    /* 将老的区域抹白 */
+    for (int x=selection_from->x; x<selection_to->x; ++x) {
+        for (int y=selection_from->y; y<selection_to->y; ++y) {
+            current[x][y] = 0;
+        }
+    }
+
+    /* 迭代指针归位 */
+    p = stage;
+
+    /* 在新的位置绘制 */
+    for (int x=selection_from->x; x<selection_to->x; ++x) {
+        for (int y=selection_from->y; y<selection_to->y; ++y) {
+            if (IN_SCREEN(x+delta->x, y+delta->y)) {
+                current[x+delta->x][y+delta->y] = *p;
+            }
+            p += 1;
+        }
+    }
 
     return;
 }

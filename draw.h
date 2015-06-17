@@ -68,5 +68,9 @@ void bg_draw_rotate(
         struct bg_point * vec_from,
         struct bg_point * vec_to);
 
+void bg_draw_transform(
+        struct bg_point * selection_from,
+        struct bg_point * selection_to,
+        struct bg_point * delta);
 
 #endif  /* BG_DRAW */

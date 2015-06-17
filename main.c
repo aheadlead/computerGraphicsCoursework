@@ -60,10 +60,12 @@ extern bg_frame current;
 #define STATE_SELECTION_WAITING_RELEASE_POINT 22
 #define STATE_ROTATE_WAITING_PRESS 23
 #define STATE_ROTATE_WAITING_RELEASE 24
+#define STATE_TRANSFORM_WAITING_PRESS 25
+#define STATE_TRANSFORM_WAITING_RELEASE 26
 
 static int state=STATE_LINE_WAITING_CLICK_FIRST_POINT;
 
-static struct bg_point from;
+static struct bg_point from, tmp;
 static struct bg_point_list plist;
 static time_t last_press=0;
 static struct bg_point last_press_point;
@@ -165,6 +167,11 @@ void on_press(struct bg_point * pos_p) {
             from = *pos_p; 
             state = STATE_ROTATE_WAITING_RELEASE;
             break;
+
+        case STATE_TRANSFORM_WAITING_PRESS:
+            from = *pos_p;
+            state = STATE_TRANSFORM_WAITING_RELEASE;
+            break;
     }
 
     last_press_point = *pos_p;
@@ -246,10 +253,10 @@ void on_release(struct bg_point * pos_p) {
 #define MAX(a, b) ((a)>(b)?(a):(b))
             selection_from = from;
             selection_to = *pos_p;
-            int minX = MIN(selection_from.x, selection_to.x);
-            int maxX = MAX(selection_from.x, selection_to.x);
-            int minY = MIN(selection_from.y, selection_to.y);
-            int maxY = MAX(selection_from.y, selection_to.y);
+            minX = MIN(selection_from.x, selection_to.x);
+            maxX = MAX(selection_from.x, selection_to.x);
+            minY = MIN(selection_from.y, selection_to.y);
+            maxY = MAX(selection_from.y, selection_to.y);
             selection_from.x = minX;
             selection_from.y = minY;
             selection_to.x = maxX;
@@ -258,8 +265,7 @@ void on_release(struct bg_point * pos_p) {
 #undef MAX
             state = STATE_SELECTION_WAITING_CLICK_POINT;
             break;
-
-        case STATE_ROTATE_WAITING_RELEASE:
+case STATE_ROTATE_WAITING_RELEASE:
             bg_undo_restore();
             bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
             bg_draw_rotate(
@@ -269,6 +275,21 @@ void on_release(struct bg_point * pos_p) {
             bg_draw_flush();
             selection_from.x = selection_from.y = 400;
             selection_to.x = selection_to.y = 400;
+            break;
+
+        case STATE_TRANSFORM_WAITING_RELEASE:
+            bg_undo_restore();
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            tmp.x = pos_p->x - from.x;  /* 使用点 tmp 当作临时变量来表示移动向量 */
+            tmp.y = pos_p->y - from.y;
+            bg_draw_transform(&selection_from, &selection_to, &tmp);
+            bg_undo_commit();
+            bg_draw_flush();
+            selection_from.x += tmp.x;
+            selection_from.y += tmp.y;
+            selection_to.x += tmp.x; 
+            selection_to.y += tmp.y;
+            state = STATE_TRANSFORM_WAITING_PRESS;
             break;
     }
     return;
@@ -395,6 +416,20 @@ void on_drag(struct bg_point * pos_p) {
             bg_draw_flush();
             /* state 不变 */
             return;
+
+        case STATE_TRANSFORM_WAITING_RELEASE:
+            bg_undo_restore();
+            /* 为了避免辅助线被“刷白”的选区遮挡，要后画辅助线 */
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            tmp.x = pos_p->x - from.x;  /* 使用点 tmp 当作临时变量来表示移动向量 */
+            tmp.y = pos_p->y - from.y;
+            bg_draw_transform(&selection_from, &selection_to, &tmp);
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_3);  /* 切换到虚线 1/4 */
+            bg_draw_line(&from, pos_p);  /* 辅助线 */
+            bg_draw_line_set_pattern(BG_LINE_PATTERN_0);  /* 切换到实线 */
+            bg_draw_flush();
+            /* state 不变 */
+            
     }
     return;
 }
@@ -493,6 +528,13 @@ void menu_rotate() {
     return;
 }   
 
+void menu_transform() {
+    bg_undo_restore();
+    bg_draw_flush();
+    state = STATE_TRANSFORM_WAITING_PRESS;
+    return;
+}
+
 int main(int argc, char ** argv) {
 #ifndef NDEBUG
     signal(SIGSEGV, debug_handler);
@@ -521,7 +563,7 @@ int main(int argc, char ** argv) {
     bg_menu_bind("选择选区", menu_select_selection);
     bg_menu_bind("清除选区", menu_clean_selection);
     bg_menu_bind("旋转", menu_rotate);
-    /*bg_menu_bind("平移", menu_transform);*/
+    bg_menu_bind("平移", menu_transform);
     bg_menu_bind("--------", menu_dummy);
 
     bg_menu_bind("清空画布", menu_clean);
