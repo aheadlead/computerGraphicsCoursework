@@ -5,7 +5,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include <glut/GLUT.h>
+#include <GLUT/glut.h>
 
 #include "point.h"
 

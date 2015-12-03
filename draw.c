@@ -6,7 +6,7 @@
 #include <stdio.h>  /* fprintf(for debugging) */
 #include <assert.h>  /* assert */
 
-#include <glut/GLUT.h>
+#include <GLUT/glut.h>
 #include "linux/list.h"
 
 /* Though the OpenGL APIs used in this program is abandoned and outdated, I have 
